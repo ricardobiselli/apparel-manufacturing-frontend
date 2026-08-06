@@ -87,97 +87,116 @@ const CreateGarment = () => {
     };
 
     return (
-        <>
-            <Form onSubmit={handleSubmit}>
-                <h2>Create New Garment</h2>
-                <Form.Group>
-                    <Form.Label>Garment name: </Form.Label>
-                    <Form.Control
-                        type="text"
-                        name="garmentName"
-                        placeholder="Enter garment name..."
-                        value={garment.garmentName}
-                        onChange={handleGarmentInputChange}
-                        required
-                    />
-                </Form.Group>
-                <Form.Group>
-                    <Form.Label>Garment description: </Form.Label>
-                    <Form.Control
-                        type="text"
-                        name="garmentDescription"
-                        placeholder="Enter garment description..."
-                        value={garment.garmentDescription}
-                        onChange={handleGarmentInputChange}
-                        required
-                    />
-                </Form.Group>
+        <div className="container mt-4">
+            <div className="form-container">
+                <h1 className="text-center mb-4">Create New Garment</h1>
+                <Form onSubmit={handleSubmit}>
+                    <fieldset className="mb-4 p-3 border rounded" style={{borderColor: 'var(--border)'}}>
+                        <legend className="text-primary">Garment Information</legend>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Garment Name</Form.Label>
+                            <Form.Control
+                                type="text"
+                                name="garmentName"
+                                placeholder="Enter garment name..."
+                                value={garment.garmentName}
+                                onChange={handleGarmentInputChange}
+                                required
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Garment Description</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                name="garmentDescription"
+                                placeholder="Enter garment description..."
+                                value={garment.garmentDescription}
+                                onChange={handleGarmentInputChange}
+                                required
+                            />
+                        </Form.Group>
+                    </fieldset>
 
-                <h2>Add Operations</h2>
+                    <fieldset className="mb-4 p-3 border rounded" style={{borderColor: 'var(--border)'}}>
+                        <legend className="text-primary">Operation Details</legend>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Operation Name</Form.Label>
+                            <Form.Control
+                                type="text"
+                                name="operationName"
+                                placeholder="Enter operation name..."
+                                value={operation.operationName}
+                                onChange={handleOperationInputChange}
+                                required={operations.length === 0}
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Operation Description</Form.Label>
+                            <Form.Control
+                                type="text"
+                                name="operationDescription"
+                                placeholder="Short description..."
+                                value={operation.operationDescription}
+                                onChange={handleOperationInputChange}
+                                required={operations.length === 0}
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Base Time (seconds)</Form.Label>
+                            <Form.Control
+                                type="number"
+                                min={1}
+                                name="baseTime"
+                                placeholder="Enter base time in seconds"
+                                value={operation.baseTime}
+                                onChange={handleOperationInputChange}
+                                required={operations.length === 0}
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Units Per Garment</Form.Label>
+                            <Form.Control
+                                type="number"
+                                min={1}
+                                name="unitsPerGarment"
+                                placeholder="How many times per garment?"
+                                value={operation.unitsPerGarment}
+                                onChange={handleOperationInputChange}
+                                required={operations.length === 0}
+                            />
+                        </Form.Group>
+                        <Button variant="primary" type="button" onClick={handleAddNewOperation}>
+                            + Add Operation
+                        </Button>
+                    </fieldset>
 
-                <Form.Label>Operation name: </Form.Label>
-                <Form.Control
-                    type="text"
-                    name="operationName"
-                    placeholder="Enter operation name..."
-                    value={operation.operationName}
-                    onChange={handleOperationInputChange}
-                    required={operations.length === 0} />
+                    {operations.length > 0 && (
+                        <div className="mb-4 p-3 bg-light border rounded">
+                            <h5>Operations ({operations.length})</h5>
+                            <ul className="list-group list-group-flush mt-2">
+                                {operations.map((op, index) => (
+                                    <li key={index} className="list-group-item d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>{op.operationName}</strong>
+                                            <p className="mb-1 text-muted small">{op.operationDescription}</p>
+                                            <small>⏱ {op.baseTime}s × {op.unitsPerGarment} units</small>
+                                        </div>
+                                        <Button size="sm" variant="outline-danger" onClick={() => handleRemoveOperation(index)}>
+                                            ✕
+                                        </Button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
 
-
-                <Form.Label>Operation Description: </Form.Label>
-                <Form.Control
-                    type="text"
-                    name="operationDescription"
-                    placeholder="Short description please..."
-                    value={operation.operationDescription}
-                    onChange={handleOperationInputChange}
-                    required={operations.length === 0} />
-
-
-
-                <Form.Label>BaseTime (seconds): </Form.Label>
-                <Form.Control
-                    type="number"
-                    min={1}
-                    name="baseTime"
-                    placeholder="Enter base time for this operation (seconds)"
-                    value={operation.baseTime}
-                    onChange={handleOperationInputChange}
-                    required={operations.length === 0} />
-
-                <Form.Label>Units Per Garment: </Form.Label>
-                <Form.Control
-                    type="number"
-                    min={1}
-                    name="unitsPerGarment"
-                    placeholder="How many times is this operation performed per garment?"
-                    value={operation.unitsPerGarment}
-                    onChange={handleOperationInputChange}
-                    required={operations.length === 0} />
-
-
-                <Button type="button" onClick={handleAddNewOperation}>
-                    Add New Operation
-                </Button>
-
-                {operations.length > 0 && (
-                    <>
-                        <h3>Operations List</h3>
-                        <ul>
-                            {operations.map((op, index) => (
-                                <li key={index}>
-                                    {op.operationName}: {op.operationDescription} ({op.baseTime} seconds, {op.unitsPerGarment} per garment)
-                                    <button onClick={() => handleRemoveOperation(index)}>Remove</button>
-                                </li>
-                            ))}
-                        </ul>
-                    </>
-                )}
-
-                <button type="submit">Add Garment</button>
-            </Form>
-        </>
+                    <Button variant="primary" type="submit" className="w-100 py-2 fw-bold">
+                        Create Garment
+                    </Button>
+                </Form>
+            </div>
+        </div>
     );
 };
 

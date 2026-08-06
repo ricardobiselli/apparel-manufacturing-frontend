@@ -11,13 +11,20 @@ const OperationLog = () => {
   const { machineSessionId } = useParams();
   const navigate = useNavigate();
   const pressTimer = useRef(null);
+  const flashTimer = useRef(null);
   const isLongPress = useRef(false);
+  const isSubmitting = useRef(false);
 
   const [showExceptionModal, setShowExceptionModal] = useState(false);
   const [confirmException, setConfirmException] = useState(null); // 'EndOfDay' or 'EndOfProduction' or null
+  const [productionStarted, setProductionStarted] = useState(false);
+  const [flashSuccess, setFlashSuccess] = useState(false);
 
   // ---------- NORMAL OPERATION ----------
   const handleNormalOperation = async () => {
+    if (isSubmitting.current) return;
+    isSubmitting.current = true;
+
     try {
       if (!machineSessionId) return;
 
@@ -25,8 +32,19 @@ const OperationLog = () => {
       clickSound.play();
 
       await AddOperationLog(Number(machineSessionId));
+      setProductionStarted(true);
+      setFlashSuccess(true);
+      if (flashTimer.current) {
+        clearTimeout(flashTimer.current);
+      }
+      flashTimer.current = setTimeout(() => {
+        setFlashSuccess(false);
+        flashTimer.current = null;
+      }, 250);
     } catch (err) {
       console.error("Error recording operation log:", err);
+    } finally {
+      isSubmitting.current = false;
     }
   };
 
@@ -42,7 +60,7 @@ const OperationLog = () => {
       setConfirmException(null);
 
       if (exceptionType === "EndOfDay" || exceptionType === "EndOfProduction") {
-        navigate("/");
+        navigate("/MachineSelectScreen");
       }
     } catch (err) {
       console.error("Error recording exception log:", err);
@@ -66,7 +84,9 @@ const OperationLog = () => {
     }
 
     if (!isLongPress.current) {
-      handleNormalOperation();
+      if (!isSubmitting.current) {
+        handleNormalOperation();
+      }
     }
   };
 
@@ -79,17 +99,31 @@ const OperationLog = () => {
   };
 
   return (
-    <>
+    <div
+      className="d-flex align-items-center justify-content-center"
+      style={{ minHeight: '100vh', padding: '1rem' }}
+    >
       <Button
-        onMouseDown={startPress}
-        onMouseUp={endPress}
-        onMouseLeave={cancelPress}
-        onTouchStart={startPress}
-        onTouchEnd={endPress}
-        onTouchCancel={cancelPress}
+        onPointerDown={startPress}
+        onPointerUp={endPress}
+        onPointerLeave={cancelPress}
+        onPointerCancel={cancelPress}
+        variant={flashSuccess ? "success" : "primary"}
         size="lg"
+        style={{
+          borderRadius: 0,
+          width: '100%',
+          maxWidth: 680,
+          height: 'calc(100vh - 2rem)',
+          minHeight: 240,
+          padding: '1rem',
+          fontSize: '1.5rem',
+          textTransform: 'uppercase',
+          transition: 'background-color 120ms ease, color 120ms ease',
+        }}
+        className="w-100"
       >
-        LOG OPERATION
+        {productionStarted ? "Log operation" : "tap to start!"}
       </Button>
 
       {/* ---------- EXCEPTION MODAL ---------- */}
@@ -124,6 +158,13 @@ const OperationLog = () => {
             onClick={() => submitException("NeedleBreak")}
           >
             Needle Break
+          </Button>
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={() => submitException("WaitingForBundleOrSupplies")}
+          >
+            Waiting for Bundle / Supplies
           </Button>
 
           <Button
@@ -172,8 +213,7 @@ const OperationLog = () => {
           </Modal>
         </Modal.Body>
       </Modal>
-
-    </>
+    </div >
   );
 };
 

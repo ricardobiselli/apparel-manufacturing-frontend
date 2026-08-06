@@ -4,18 +4,16 @@ import { useEffect, useState } from 'react';
 const useMachines = () => {
     const [machines, setMachines] = useState(null);
 
+    const fetchMachines = async () => {
+        const response = await GetMachines();
+        setMachines(Array.isArray(response) ? response : []);
+    };
+
     useEffect(() => {
         fetchMachines();
     }, []);
-    const fetchMachines = async () => {
 
-        console.log("checkpoint before fetching Machines");
-        const response = await GetMachines();
-        console.log("Machines response:", response);
-        setMachines(response);
-    }
-
-    return { machines };
-}
+    return { machines, refreshMachines: fetchMachines };
+};
 
 export default useMachines;

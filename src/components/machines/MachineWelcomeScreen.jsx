@@ -12,34 +12,40 @@ const MachineWelcomeScreen = () => {
     }
 
     return (
-        <Form onSubmit={handleSubmit}>
-            <Form.Group>
-                <Form.Label> Select Machine Post number to begin...</Form.Label>
-                <Form.Control
-                    as="select"
-                    value={postNumber}
-                    onChange={(e) => setPostNumber(e.target.value)}
-                    disabled={!machines}
-                >
-                    <option value="">
-                        -- Select a machine --
-                    </option>
-
-                    {machines?.map((machine) => (
-                        <option
-                            key={machine.machineId}
-                            value={machine.postNumber}
+        <div className="container mt-4">
+            <div className="form-container">
+                <h1 className="text-center mb-4">Select Machine</h1>
+                <Form onSubmit={handleSubmit}>
+                    <Form.Group className="mb-4">
+                        <Form.Label className="fw-bold">Select Machine Post Number</Form.Label>
+                        <Form.Select
+                            value={postNumber || ""}
+                            onChange={(e) => setPostNumber(e.target.value)}
+                            disabled={!machines}
+                            size="lg"
                         >
-                            POST {machine.postNumber} - Model: {machine.machineModel}
-                        </option>
-                    ))}
-                </Form.Control>
-            </Form.Group>
-            <Button
-                type="sumbit"
-                disabled={!postNumber}
-            ></Button>
-        </Form>
+                            <option value="">-- Select a machine --</option>
+                            {machines?.map((machine) => (
+                                <option
+                                    key={machine.MachineId}
+                                    value={machine.PostNumber}
+                                >
+                                    POST {machine.PostNumber} - {machine.MachineName} ({machine.MachineModel})
+                                </option>
+                            ))}
+                        </Form.Select>
+                    </Form.Group>
+                    <Button
+                        type="submit"
+                        variant="primary"
+                        className="w-100 py-2 fw-bold"
+                        disabled={!postNumber}
+                    >
+                        Continue
+                    </Button>
+                </Form>
+            </div>
+        </div>
     )
 
 }

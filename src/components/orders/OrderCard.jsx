@@ -38,40 +38,39 @@ const OrderCard = ({ order }) => {
 	};
 
 	return (
-		<div className="container mt-3">
-			<Card className="mb-3 shadow-sm">
-				<CardHeader className="bg-success text-white">
-					<h5 className="mb-0">Order Details</h5>
+		<div className="card-wrapper">
+			<Card className="mb-3 shadow-sm h-100">
+				<CardHeader className="py-3" style={{backgroundColor: 'var(--primary)', borderBottom: '2px solid var(--primary-strong)'}}>
+					<h5 className="mb-0 fw-bold" style={{color: 'var(--surface)'}}>Order #{orderId}</h5>
 				</CardHeader>
 				<CardBody>
-					<Form.Group controlId="orderStatusSelect">
-						<Form.Label><strong>Status:</strong></Form.Label>
-						<Form.Select value={status} onChange={handleStatusChange} disabled={updating}>
+					<p className="mb-2"><strong>Status:</strong></p>
+					<Form.Group controlId="orderStatusSelect" className="mb-3">
+						<Form.Select value={status} onChange={handleStatusChange} disabled={updating} size="sm">
 							{statusOptions.map(opt => (
 								<option key={opt} value={opt}>{opt}</option>
 							))}
 						</Form.Select>
 					</Form.Group>
-					<p className="mt-2">
-						<Button variant="primary" onClick={handleUpdateStatus} disabled={updating}>
-							{updating ? 'Updating...' : 'Update Status'}
-						</Button>
-					</p>
-					<p><strong>ID:</strong> {orderId}</p>
-					<p><strong>Description:</strong> {description}</p>
-					<p><strong>Date:</strong> {dateOfCreation}</p>
+					<Button variant="primary" size="sm" onClick={handleUpdateStatus} disabled={updating} className="mb-3">
+						{updating ? '⏳ Updating...' : '✓ Update Status'}
+					</Button>
 
-					<h6 className="mt-3">Garments:</h6>
-					<ul className="list-group">
+					<hr />
+					<p className="mb-2"><strong>Description:</strong> <span style={{color: 'var(--muted)'}}>{description}</span></p>
+					<p className="mb-3"><strong>Created:</strong> <small className="text-muted">{new Date(dateOfCreation).toLocaleDateString()}</small></p>
+
+					<h6 className="fw-bold mt-3 mb-2">Assigned Garments ({orderGarments?.length || 0})</h6>
+					<ul className="list-group list-group-flush">
 						{orderGarments && orderGarments.length > 0 ? (
 							orderGarments.map((garment, index) => (
-								<li key={index} className="list-group-item">
-									<strong>Name:</strong> {garment.garmentName || garment.name || 'N/A'} <br />
-									<strong>Description:</strong> {garment.garmentDescription || garment.description || 'N/A'}
+								<li key={index} className="list-group-item px-0 py-2">
+									<p className="mb-1 fw-semibold">{garment.garmentName || garment.name || 'N/A'}</p>
+									<small className="text-muted">{garment.garmentDescription || garment.description || 'No description'}</small>
 								</li>
 							))
 						) : (
-							<li className="list-group-item">No garments in this order.</li>
+							<li className="list-group-item px-0 py-2 text-muted">No garments in this order</li>
 						)}
 					</ul>
 				</CardBody>

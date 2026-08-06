@@ -14,6 +14,11 @@ export const AddMachine = async (machine) => {
     return response.data;
 } 
 
+export const UpdateMachine = async (machineId, payload) => {
+    const response = await api.put(`/Machine/${machineId}`, payload);
+    return response.data;
+};
+
  export const AddMachineSession = async (machineSession) => {
     const response = await api.post('/MachineSession/AddMachineSession', machineSession);
     return response.data;
@@ -29,6 +34,13 @@ export const GetActiveMachineSessionByMachineId = async (id) => {
 export const GetActiveMachineSessionWithDetailsByMachineId = async (id) => {
 
     const response = await api.get(`/MachineSession/GetActiveMachineSessionByMachineIdWithDetailsIncluded/${id}`)
+    return response.data;
+} 
+
+
+export const GetPendingSessionsForActiveOrderByMachineId = async (id) => {
+
+    const response = await api.get(`/MachineSession/GetPending/${id}`)
     return response.data;
 } 
 

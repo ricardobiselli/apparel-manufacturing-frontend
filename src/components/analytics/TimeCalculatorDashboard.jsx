@@ -53,16 +53,16 @@ const TimeCalculatorDashboard = () => {
                         <tbody>
                             {selectedOrder.machineSessions?.map((session) => (
                                 <tr key={session.machineSessionId}>
-                                    <td>{session.machineId}</td>
-                                    <td>{session.garmentName}</td>
-                                    <td>{session.operationName}</td>
+                                    <td>{session.machineId ?? "—"}</td>
+                                    <td>{session.garmentName || "—"}</td>
+                                    <td>{session.operationName || "—"}</td>
                                     <td>
-                                        {new Date(session.startedAt).toLocaleString()}
+                                        {session.startedAt ? new Date(session.startedAt).toLocaleString() : "—"}
                                     </td>
                                     <td>
                                         {session.endedAt
                                             ? new Date(session.endedAt).toLocaleString()
-                                            : "-"}
+                                            : "—"}
                                     </td>
                                     <td>
                                         {session.status === 'Pending' && <Badge bg="warning">Pending</Badge>}
@@ -74,7 +74,7 @@ const TimeCalculatorDashboard = () => {
                                         <Button
                                             variant="info"
                                             size="sm"
-                                            onClick={() => navigate(`/MachineSessionDetails/${session.machineSessionId}`)}
+                                            onClick={() => navigate(`/MachineSessionMetrics/${session.machineSessionId}`)}
                                         >
                                             Details
                                         </Button>
