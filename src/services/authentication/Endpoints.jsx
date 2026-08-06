@@ -1,9 +1,9 @@
-import api from "./AxiosConnection"
+import api from "../../api/AxiosConnection"
 
-export const AuthenticationService = async (userNameOrEmail, password) => {
-    const response = await api.post('/authentication/Authenticate',
+export const AuthenticationService = async (employeeIdNumber, password) => {
+    const response = await api.post('/authentication/login',
         {
-            userNameOrEmail: userNameOrEmail,
+            employeeNumber: employeeIdNumber,
             password: password,
         },
     );

@@ -1,9 +1,6 @@
-import { createContext, useState } from 'react';
-import { AuthenticationService } from '../../api/Endpoints';
-import { jwtDecode } from 'jwt-decode'
+import { createContext, useState, useEffect } from 'react';
+import { AuthenticationService } from './Endpoints';
 import PropTypes from "prop-types";
-import { useEffect } from 'react';
-
 
 const AuthContext = createContext();
 
@@ -11,56 +8,76 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(null);
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [role, setRole] = useState(null)
-
 
     useEffect(() => {
         const tokenSavedInLocalStorage = localStorage.getItem('token');
         if (tokenSavedInLocalStorage) {
-            const decodedUser = jwtDecode(tokenSavedInLocalStorage);
+            const storedUserId = localStorage.getItem('userId');
+            const storedFirstName = localStorage.getItem('firstName');
+            const storedLastName = localStorage.getItem('lastName');
+            const storedRole = localStorage.getItem('role');
+            const storedMustChangePassword = localStorage.getItem('mustChangePassword');
+
             setToken(tokenSavedInLocalStorage);
-            setUser(decodedUser);
-            //  let role = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
-            // setRole(decodedUser[role]);
-            setRole(decodedUser["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"]);
+            setUser({
+                userId: storedUserId ? Number(storedUserId) : null,
+                firstName: storedFirstName || '',
+                lastName: storedLastName || '',
+                role: storedRole || '',
+                mustChangePassword: storedMustChangePassword === 'true',
+            });
         }
-        setLoading(false); 
+        setLoading(false);
 
-    }, []); 
+    }, []);
 
 
-    const login = async (userNameOrEmail, password) => {
+    const login = async (employeeIdNumber, password) => {
         try {
-            const token = await AuthenticationService(userNameOrEmail, password);
+            const response = await AuthenticationService(employeeIdNumber, password);
+            const token = response.token;
             if (token) {
                 setToken(token);
-                const decodedUser = jwtDecode(token);
-                console.log('this is the user: ', decodedUser);
-                setUser(decodedUser);
-                setRole(decodedUser["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
-                ])
-                localStorage.setItem('token', token);
+                setUser({
+                    userId: response.userId,
+                    firstName: response.firstName,
+                    lastName: response.lastName,
+                    role: response.role,
+                    mustChangePassword: response.mustChangePassword,
+                });
+
+                localStorage.setItem('token', response.token);
+                localStorage.setItem('role', response.role);
+                localStorage.setItem('userId', response.userId.toString());
+                localStorage.setItem('firstName', response.firstName);
+                localStorage.setItem('lastName', response.lastName);
+                localStorage.setItem('mustChangePassword', response.mustChangePassword.toString());
+
                 return true;
-            } else { return false; }
-
-
+            } else {
+                return false;
+            }
         } catch (error) {
             console.error('login failed', error);
-            return false
+            return false;
         }
 
     }
 
     const logout = () => {
-        setUser(null);
-        setRole(null);
+        setToken(null);
         setUser(null);
         localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('firstName');
+        localStorage.removeItem('lastName');
+        localStorage.removeItem('mustChangePassword');
         console.log('user has logged out');
     };
 
     return (
-        <AuthContext.Provider value={{ login, logout, token, user, role, loading }}>
+        <AuthContext.Provider value={{ login, logout, token, user, loading }}>
             {children}
         </AuthContext.Provider>
     )
@@ -69,7 +86,6 @@ export const AuthProvider = ({ children }) => {
 
 AuthProvider.propTypes = {
     children: PropTypes.node.isRequired,
-  };
-  
+};
 
 export default AuthContext;

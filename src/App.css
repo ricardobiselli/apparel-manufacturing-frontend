@@ -1,55 +1,232 @@
-/* Global Background & Text */
+:root {
+  --bg: #eef2f4;
+  --surface: #ffffff;
+  --surface-soft: #f7f8f9;
+  --surface-strong: #d1d7dc;
+  --border: #cad3db;
+  --text: #1f2933;
+  --muted: #55666f;
+  --primary: #2c5d73;
+  --primary-soft: #4f7d8f;
+  --primary-strong: #1f4253;
+  --danger: #a03e3e;
+}
+
 body {
-  background-color: #FFF7E6; /* Light beige */
-  font-family: 'Arial', sans-serif;
-  color: #333;
   margin: 0;
   padding: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
-/* Centering Content */
 #root {
-  max-width: 1200px;
+  min-height: 100vh;
+}
+
+.app-shell {
+  max-width: 1400px;
   margin: 0 auto;
   padding: 1rem;
-  text-align: center;
 }
 
-/* General Form Container */
-.form-container {
-  max-width: 400px;
-  width: 90%;
-  padding: 20px;
-  background-color: #FFDDC1; /* Soft peach */
+.app-main {
+  min-height: calc(100vh - 100px);
+}
+
+.header-navbar {
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Header spacing and action styles */
+.header-navbar .navbar-nav {
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.header-actions .btn {
+  min-width: 88px;
+}
+
+/* Make nav links look like separated buttons */
+.nav-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.85rem;
   border-radius: 10px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text) !important;
+  font-weight: 600;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-/* Input Fields */
-.form-control {
-  background-color: #FFF7E6 !important;
-  border: 1px solid #ccc;
-  padding: 10px;
-  border-radius: 5px;
+.nav-button:hover {
+  background-color: var(--surface-soft);
+  border-color: var(--border);
+  color: var(--primary-strong) !important;
+  box-shadow: 0 6px 18px rgba(40,58,77,0.06);
 }
 
-/* Buttons */
-.btn-primary {
-  background-color: #A7E1F8 !important;
-  border: none;
-  color: #005f73;
-}
-
-.btn-primary:hover {
-  background-color: #87C4E2 !important;
-}
-
-/* Responsive Design */
-@media screen and (max-width: 768px) {
-  #root {
-    padding: 1rem;
+@media (min-width: 992px) {
+  .navbar .me-auto {
+    column-gap: 0.5rem;
   }
+}
+
+.navbar-nav .nav-link {
+  color: var(--text) !important;
+  font-weight: 500;
+}
+
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link:focus {
+  color: var(--primary-strong) !important;
+}
+
+.form-container {
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(40, 58, 77, 0.08);
+}
+
+.form-control,
+.form-select,
+textarea {
+  background-color: var(--surface-soft) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.btn-primary {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary:focus-visible {
+  background-color: var(--primary-strong) !important;
+  border-color: var(--primary-strong) !important;
+}
+
+.btn-secondary {
+  background-color: #f3f5f6 !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus {
+  background-color: #e8edf1 !important;
+  border-color: var(--primary-soft) !important;
+}
+
+.table {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.table th,
+.table td {
+  border-top: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.table thead {
+  background-color: #f2f5f7;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: var(--surface-soft);
+}
+
+.card,
+.modal-content,
+.alert {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.alert {
+  background-color: #f4f7f8;
+  color: var(--text);
+}
+
+.card-wrapper {
+  padding: 0 0.5rem;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 12px 32px rgba(40, 58, 77, 0.12);
+  transform: translateY(-2px);
+}
+
+fieldset {
+  border: 1px solid var(--border) !important;
+  border-radius: 8px;
+}
+
+legend {
+  color: var(--primary) !important;
+  padding: 0 0.5rem;
+}
+
+.text-primary {
+  color: var(--primary) !important;
+}
+
+.text-muted {
+  color: var(--muted) !important;
+}
+
+.badge {
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+@media screen and (max-width: 768px) {
+  .app-shell {
+    padding: 0.8rem;
+  }
+
   .form-container {
-    width: 100%;
+    padding: 1.25rem;
   }
 }

@@ -1,23 +1,32 @@
 import { useState, useContext } from "react";
 import AuthContext from "../../services/authentication/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Form, Alert } from "react-bootstrap";
-import Button from '@mui/material/Button';
+import { Form, Alert, Button } from "react-bootstrap";
 
 
 const Login = () => {
   const { login } = useContext(AuthContext);
-  const [userNameOrEmail, setUserNameOrEmail] = useState("");
+  const [employeeIdNumber, setEmployeeIdNumber] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null); 
-    const success = await login(userNameOrEmail, password);
+    setError(null);
+
+    const success = await login(employeeIdNumber, password);
+
     if (success) {
-      navigate("/")
+      const role = localStorage.getItem("role")?.toLowerCase();
+
+      if (role === "operator") {
+        navigate("/machineSelectScreen");
+      } else if (role === "admin") {
+        navigate("/timeCalculatorDashboard");
+      } else {
+        navigate("/");
+      }
     } else {
       setError("Invalid credentials...try again!");
     }
@@ -29,12 +38,12 @@ const Login = () => {
         <h2 className="mb-4 text-center">Login</h2>
         <Form onSubmit={handleSubmit}>
           <Form.Group controlId="formBasicEmail" className="mb-3">
-            <Form.Label>Email or Username</Form.Label>
+            <Form.Label>Employee ID number</Form.Label>
             <Form.Control
               type="text"
-              placeholder="Enter your email or username"
-              value={userNameOrEmail}
-              onChange={(e) => setUserNameOrEmail(e.target.value)}
+              placeholder="Enter your employee ID number"
+              value={employeeIdNumber}
+              onChange={(e) => setEmployeeIdNumber(e.target.value)}
               required
               className="form-control"
             />
@@ -51,7 +60,7 @@ const Login = () => {
               className="form-control"
             />
           </Form.Group>
-           <Button variant="contained" type="submit">Login</Button>
+          <Button variant="primary" type="submit" className="w-100">Login</Button>
 
           {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
         </Form>

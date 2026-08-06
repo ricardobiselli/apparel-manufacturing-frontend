@@ -55,4 +55,12 @@ export const AddMachineExceptionLog = async (machineSessionId, exceptionType) =>
 export const GetTimeSegments = async (id) => {
     const response = await api.get(`/operationlogs/GetTimeSegmentsForMachineSession/${id}`);
     return response.data;
-} 
+}
+
+export const UpdateOperation = async (operationId, updateOperationData) => {
+    console.log('checkpoint right before API call for UpdateOperation: ', { operationId, updateOperationData });
+
+    const response = await api.put(`/operation/${operationId}`, updateOperationData);
+
+    return response.data;
+};
