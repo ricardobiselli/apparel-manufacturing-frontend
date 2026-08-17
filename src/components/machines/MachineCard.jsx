@@ -12,7 +12,7 @@ const MachineCard = ({ machine, onEditMachine, canEditMachine }) => {
     <div className="card-wrapper">
       <Card className="mb-3 shadow-sm h-100">
         <CardHeader className="py-3" style={{ backgroundColor: 'var(--primary-soft)', borderBottom: '2px solid var(--primary)' }}>
-          <h5 className="mb-0 fw-bold" style={{ color: 'var(--surface)' }}>Machine: {machineName}</h5>
+          <h5 className="mb-0 fw-bold" style={{ color: 'var(--surface)' }}> {machineName}</h5>
         </CardHeader>
         <CardBody>
           <p className="mb-2"><strong>ID:</strong> <span style={{ color: 'var(--muted)' }}>{machineId}</span></p>
