@@ -1,7 +1,8 @@
-﻿import { useState } from 'react';
+﻿import { useContext, useState } from 'react';
 import useMachines from '../machines/hooks/UseMachines';
 import useOrders from '../orders/hooks/UseOrders';
 import useMachineSessions from '../machines/hooks/UseMachineSessions';
+import AuthContext from '../../services/authentication/AuthContext';
 import { Form, Button, Table } from 'react-bootstrap';
 import {
     AddMachineSession,
@@ -9,6 +10,7 @@ import {
 } from '../machines/endpoints/Endpoints';
 
 const OperationAssignment = () => {
+    const { user } = useContext(AuthContext);
     const { machines } = useMachines();
     const { orders } = useOrders();
     const { machineSessions, fetchSessions } = useMachineSessions();
@@ -88,6 +90,11 @@ const OperationAssignment = () => {
             return;
         }
 
+        if (!user?.userId) {
+            alert('Unable to identify the logged-in operator. Please log in again.');
+            return;
+        }
+
         const existingSession = currentAssignments.find(
             (session) =>
                 session.garmentId === operation.garmentId &&
@@ -102,6 +109,7 @@ const OperationAssignment = () => {
         const machineSession = {
             orderId: Number(selectedOrder),
             machineId: Number(selectedMachineId),
+            UserId: Number(user.userId),
             garmentId: operation.garmentId,
             operationId: operation.operationId,
         };

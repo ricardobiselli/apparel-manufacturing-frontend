@@ -92,7 +92,7 @@ const CreateOrder = () => {
                         variant="primary"
                         type="submit"
                         className="w-100 py-2 fw-bold"
-                        disabled={!selectedGarment || !selectedQuantity}
+                        disabled={!selectedGarment || !selectedQuantity }
                     >
                         Create Order
                     </Button>
