@@ -87,6 +87,8 @@ const MachineSessionMetrics = () => {
                 <thead>
                     <tr>
                         <th>Operation ID</th>
+                        <th>Operator Name</th>
+                        <th>Employee Number</th>
                         <th>Operation Name</th>
                         <th>Base Time</th>
                         <th>Units / Garment</th>
@@ -105,6 +107,8 @@ const MachineSessionMetrics = () => {
                 <tbody>
                     <tr>
                         <td>{metric.operationId ?? "-"}</td>
+                        <td>{metric.operatorName ?? "-"}</td>
+                        <td>{metric.employeeNumber ?? "-"}</td>
                         <td>{metric.operationName ?? "-"}</td>
                         <td>{metric.baseTime ?? "-"}</td>
                         <td>{metric.unitsPerGarment ?? "-"}</td>
