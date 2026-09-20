@@ -32,6 +32,8 @@ const Header = () => {
                             <Nav.Link as={Link} to="/OrderList" className="nav-button">Orders List</Nav.Link>
                             <Nav.Link as={Link} to="/machinepanel" className="nav-button">Create Machine</Nav.Link>
                             <Nav.Link as={Link} to="/machineList" className="nav-button">Machine List</Nav.Link>
+                            <Nav.Link as={Link} to="/createFabricRoll" className="nav-button">Create Fabric Roll</Nav.Link>
+                            <Nav.Link as={Link} to="/FabricRollList" className="nav-button">Fabric Roll List</Nav.Link>
                             <Nav.Link as={Link} to="/operationassignement" className="nav-button">Operation Assignment</Nav.Link>
                             <Nav.Link as={Link} to="/timeCalculatorDashboard" className="nav-button">Metrics Dashboard</Nav.Link>
                         </Nav>
