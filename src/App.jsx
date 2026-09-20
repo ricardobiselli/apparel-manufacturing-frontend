@@ -19,6 +19,8 @@ import TimeCalculatorDashboard from './components/analytics/TimeCalculatorDashbo
 import MachineSessionMetrics from './components/analytics/MachineSessionMetrics';
 import OrderList from './components/orders/OrderList';
 import MachineList from './components/machines/MachineList';
+import CreateFabricRoll from './components/fabricRolls/CreateFabricRoll';
+import FabricRollList from './components/fabricRolls/FabricRollList';
 
 const App = () => {
 
@@ -47,6 +49,8 @@ const App = () => {
                 <Route path="timeCalculatorDashboard" element={<ProtectedRoute allowedRoles={["Admin"]}><TimeCalculatorDashboard /></ProtectedRoute>} />
                 <Route path="/MachineSessionMetrics/:machineSessionId" element={<ProtectedRoute allowedRoles={["Admin"]}><MachineSessionMetrics /></ProtectedRoute>} />
                 <Route path="machineList" element={<ProtectedRoute allowedRoles={["Admin"]}><MachineList /></ProtectedRoute>} />
+                <Route path="createFabricRoll" element={<ProtectedRoute allowedRoles={["Admin"]}><CreateFabricRoll /></ProtectedRoute>} />
+                <Route path="FabricRollList" element={<ProtectedRoute allowedRoles={["Admin"]}><FabricRollList /></ProtectedRoute>} />
               </Routes>
             </main>
           </BrowserRouter>
