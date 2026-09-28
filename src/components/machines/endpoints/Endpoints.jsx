@@ -24,6 +24,11 @@ export const UpdateMachine = async (machineId, payload) => {
     return response.data;
 }
 
+export const UpdateMachineSession = async (machineSessionId, update) => {
+    const response = await api.put(`/MachineSession/Update/${machineSessionId}`, update);
+    return response.data;
+}
+
 export const GetActiveMachineSessionByMachineId = async (id) => {
 
     const response = await api.get(`/MachineSession/${id}`) //check later if the endpoint is correct

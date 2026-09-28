@@ -1,7 +1,9 @@
 import { Button, Modal } from "react-bootstrap";
 import { useParams, useNavigate } from "react-router-dom";
 import { AddOperationLog, AddMachineExceptionLog } from "./endpoints/Endpoints";
-import { useRef, useState } from "react";
+import { UpdateMachineSession } from "../machines/endpoints/Endpoints";
+import { useContext, useRef, useState } from "react";
+import AuthContext from "../../services/authentication/AuthContext";
 
 const LONG_PRESS_DURATION = 1000;
 
@@ -10,6 +12,7 @@ const clickSound = new Audio("/sounds/click.mp3");
 const OperationLog = () => {
   const { machineSessionId } = useParams();
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const pressTimer = useRef(null);
   const flashTimer = useRef(null);
   const isLongPress = useRef(false);
@@ -31,6 +34,17 @@ const OperationLog = () => {
       clickSound.currentTime = 0;
       clickSound.play();
 
+      if (!productionStarted) {
+        if (!user?.userId) {
+          alert("Unable to identify the logged-in operator. Please log in again.");
+          return;
+        }
+
+        await UpdateMachineSession(Number(machineSessionId), {
+          status: "InProgress",
+          UserId: Number(user.userId),
+        });
+      }
       await AddOperationLog(Number(machineSessionId));
       setProductionStarted(true);
       setFlashSuccess(true);
