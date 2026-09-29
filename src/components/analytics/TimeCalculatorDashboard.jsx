@@ -92,6 +92,15 @@ const TimeCalculatorDashboard = () => {
         const productiveSeconds = durationToSeconds(metric.productiveTime);
         if (productiveSeconds !== null) totals.productiveSeconds += productiveSeconds;
 
+        const downtimeSeconds = durationToSeconds(metric.downtimeTime);
+        const machineIssueSeconds = durationToSeconds(metric.machineIssueTime);
+        const qualityIssueSeconds = durationToSeconds(metric.qualityIssueTime);
+        const breakSeconds = durationToSeconds(metric.breakTime);
+        if (downtimeSeconds !== null) totals.downtimeSeconds += downtimeSeconds;
+        if (machineIssueSeconds !== null) totals.machineIssueSeconds += machineIssueSeconds;
+        if (qualityIssueSeconds !== null) totals.qualityIssueSeconds += qualityIssueSeconds;
+        if (breakSeconds !== null) totals.breakSeconds += breakSeconds;
+
         const expectedUnits = metricNumber(metric.expectedUnits);
         const baseTime = metricNumber(metric.baseTime);
         const expectedSeconds = expectedUnits !== null && baseTime !== null
@@ -115,6 +124,10 @@ const TimeCalculatorDashboard = () => {
         return totals;
     }, {
         productiveSeconds: 0,
+        downtimeSeconds: 0,
+        machineIssueSeconds: 0,
+        qualityIssueSeconds: 0,
+        breakSeconds: 0,
         plannedSeconds: 0,
         completedStandardSeconds: 0,
         efficiencyWeightedSeconds: 0,
@@ -190,6 +203,34 @@ const TimeCalculatorDashboard = () => {
                                 {currentEfficiency !== null && (
                                     <div className="text-muted small">Based on {formatPercent(currentEfficiency)} efficiency</div>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5>Order Downtime</h5>
+                    <div className="row g-3 mb-4">
+                        <div className="col-6 col-lg-3">
+                            <div className="border rounded p-3 h-100">
+                                <div className="text-muted small">Total downtime</div>
+                                <strong>{formatMinutes(orderTotals.downtimeSeconds)}</strong>
+                            </div>
+                        </div>
+                        <div className="col-6 col-lg-3">
+                            <div className="border rounded p-3 h-100">
+                                <div className="text-muted small">Machine issues</div>
+                                <strong>{formatMinutes(orderTotals.machineIssueSeconds)}</strong>
+                            </div>
+                        </div>
+                        <div className="col-6 col-lg-3">
+                            <div className="border rounded p-3 h-100">
+                                <div className="text-muted small">Quality issues</div>
+                                <strong>{formatMinutes(orderTotals.qualityIssueSeconds)}</strong>
+                            </div>
+                        </div>
+                        <div className="col-6 col-lg-3">
+                            <div className="border rounded p-3 h-100">
+                                <div className="text-muted small">Breaks</div>
+                                <strong>{formatMinutes(orderTotals.breakSeconds)}</strong>
                             </div>
                         </div>
                     </div>
