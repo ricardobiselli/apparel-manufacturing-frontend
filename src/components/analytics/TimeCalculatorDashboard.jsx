@@ -207,7 +207,7 @@ const TimeCalculatorDashboard = () => {
                         </div>
                     </div>
 
-                    <h5>Order Downtime</h5>
+                    <h5>Order Downtime details</h5>
                     <div className="row g-3 mb-4">
                         <div className="col-6 col-lg-3">
                             <div className="border rounded p-3 h-100">
