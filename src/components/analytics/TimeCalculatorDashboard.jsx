@@ -40,6 +40,65 @@ const formatMinutes = (seconds) => {
 const formatPercent = (value) =>
     Number.isFinite(value) ? `${value.toFixed(1)}%` : "—";
 
+const getSegmentCategory = (type) => {
+    const normalizedType = String(type ?? "").replace(/[^a-z]/gi, "").toLowerCase();
+    if (["break", "faultypiece", "threadbreak", "needlebreak", "waitingforbundleorsupplies", "machineissue", "qualityissue", "downtime"].includes(normalizedType)) {
+        return "downtime";
+    }
+    if (["productive", "work", "operation", "production"].includes(normalizedType)) {
+        return "productive";
+    }
+    return null;
+};
+
+const getLocalDateKey = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+};
+
+const buildDailyProduction = (sessionRows) => {
+    const dailyTotals = new Map();
+    let unclassifiedSegmentCount = 0;
+
+    sessionRows.forEach(({ metric }) => {
+        metric?.segments?.forEach((segment) => {
+            const category = getSegmentCategory(segment.type);
+            const start = segment.start ? new Date(segment.start) : null;
+            const duration = durationToSeconds(segment.duration);
+            const suppliedEnd = segment.end ? new Date(segment.end) : null;
+            const end = suppliedEnd && !Number.isNaN(suppliedEnd.getTime())
+                ? suppliedEnd
+                : start && duration !== null
+                    ? new Date(start.getTime() + duration * 1000)
+                    : null;
+
+            if (!category || !start || Number.isNaN(start.getTime()) || !end || Number.isNaN(end.getTime()) || end <= start) {
+                if (!category) unclassifiedSegmentCount += 1;
+                return;
+            }
+
+            let cursor = new Date(start);
+            while (cursor < end) {
+                const nextDay = new Date(cursor);
+                nextDay.setHours(24, 0, 0, 0);
+                const sliceEnd = nextDay < end ? nextDay : end;
+                const dateKey = getLocalDateKey(cursor);
+                const dayTotals = dailyTotals.get(dateKey) ?? { productiveSeconds: 0, downtimeSeconds: 0 };
+                dayTotals[category === "productive" ? "productiveSeconds" : "downtimeSeconds"] += (sliceEnd - cursor) / 1000;
+                dailyTotals.set(dateKey, dayTotals);
+                cursor = sliceEnd;
+            }
+        });
+    });
+
+    return {
+        days: [...dailyTotals.entries()].sort(([dateA], [dateB]) => dateA.localeCompare(dateB)),
+        unclassifiedSegmentCount,
+    };
+};
+
 const TimeCalculatorDashboard = () => {
     const [currentOrderId, setCurrentOrderId] = useState("");
     const [metricsBySession, setMetricsBySession] = useState({});
@@ -85,6 +144,7 @@ const TimeCalculatorDashboard = () => {
         session,
         ...metricsBySession[session.machineSessionId],
     }));
+    const dailyProduction = buildDailyProduction(sessionRows);
 
     const orderTotals = sessionRows.reduce((totals, { metric }) => {
         if (!metric) return totals;
@@ -234,6 +294,35 @@ const TimeCalculatorDashboard = () => {
                             </div>
                         </div>
                     </div>
+
+                    <h5>Production by Day</h5>
+                    {dailyProduction.days.length ? (
+                        <Table striped bordered hover responsive className="mb-2">
+                            <thead>
+                                <tr>
+                                    <th>Production date</th>
+                                    <th>Productive work</th>
+                                    <th>Downtime</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {dailyProduction.days.map(([date, totals]) => (
+                                    <tr key={date}>
+                                        <td>{new Date(`${date}T00:00:00`).toLocaleDateString()}</td>
+                                        <td>{formatMinutes(totals.productiveSeconds)}</td>
+                                        <td>{formatMinutes(totals.downtimeSeconds)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </Table>
+                    ) : (
+                        <Alert variant="secondary">No dated production segments are available for this order.</Alert>
+                    )}
+                    {dailyProduction.unclassifiedSegmentCount > 0 && (
+                        <Alert variant="warning">
+                            {dailyProduction.unclassifiedSegmentCount} segment(s) have unrecognized types and are excluded from the daily totals.
+                        </Alert>
+                    )}
 
                     <h5>Machine Sessions</h5>
 
