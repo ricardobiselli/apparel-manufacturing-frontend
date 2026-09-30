@@ -42,11 +42,11 @@ const formatPercent = (value) =>
 
 const getSegmentCategory = (type) => {
     const normalizedType = String(type ?? "").replace(/[^a-z]/gi, "").toLowerCase();
-    if (["break", "faultypiece", "threadbreak", "needlebreak", "waitingforbundleorsupplies", "machineissue", "qualityissue", "downtime"].includes(normalizedType)) {
-        return "downtime";
-    }
+    if (normalizedType === "break" || normalizedType === "breaktime") return "breakSeconds";
+    if (["threadbreak", "needlebreak", "machineissue"].includes(normalizedType)) return "machineIssueSeconds";
+    if (["faultypiece", "waitingforbundleorsupplies", "qualityissue", "downtime"].includes(normalizedType)) return "otherDowntimeSeconds";
     if (["productive", "work", "operation", "production"].includes(normalizedType)) {
-        return "productive";
+        return "productiveSeconds";
     }
     return null;
 };
@@ -85,8 +85,16 @@ const buildDailyProduction = (sessionRows) => {
                 nextDay.setHours(24, 0, 0, 0);
                 const sliceEnd = nextDay < end ? nextDay : end;
                 const dateKey = getLocalDateKey(cursor);
-                const dayTotals = dailyTotals.get(dateKey) ?? { productiveSeconds: 0, downtimeSeconds: 0 };
-                dayTotals[category === "productive" ? "productiveSeconds" : "downtimeSeconds"] += (sliceEnd - cursor) / 1000;
+                const dayTotals = dailyTotals.get(dateKey) ?? {
+                    productiveSeconds: 0,
+                    downtimeSeconds: 0,
+                    breakSeconds: 0,
+                    machineIssueSeconds: 0,
+                    otherDowntimeSeconds: 0,
+                };
+                const sliceSeconds = (sliceEnd - cursor) / 1000;
+                dayTotals[category] += sliceSeconds;
+                if (category !== "productiveSeconds") dayTotals.downtimeSeconds += sliceSeconds;
                 dailyTotals.set(dateKey, dayTotals);
                 cursor = sliceEnd;
             }
@@ -303,6 +311,9 @@ const TimeCalculatorDashboard = () => {
                                     <th>Production date</th>
                                     <th>Productive work</th>
                                     <th>Downtime</th>
+                                    <th>Breaks</th>
+                                    <th>Machine issues</th>
+                                    <th>Other downtime</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -311,6 +322,9 @@ const TimeCalculatorDashboard = () => {
                                         <td>{new Date(`${date}T00:00:00`).toLocaleDateString()}</td>
                                         <td>{formatMinutes(totals.productiveSeconds)}</td>
                                         <td>{formatMinutes(totals.downtimeSeconds)}</td>
+                                        <td>{formatMinutes(totals.breakSeconds)}</td>
+                                        <td>{formatMinutes(totals.machineIssueSeconds)}</td>
+                                        <td>{formatMinutes(totals.otherDowntimeSeconds)}</td>
                                     </tr>
                                 ))}
                             </tbody>
