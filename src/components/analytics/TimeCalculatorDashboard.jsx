@@ -44,7 +44,7 @@ const getSegmentCategory = (type) => {
     const normalizedType = String(type ?? "").replace(/[^a-z]/gi, "").toLowerCase();
     if (normalizedType === "break" || normalizedType === "breaktime") return "breakSeconds";
     if (["threadbreak", "needlebreak", "machineissue"].includes(normalizedType)) return "machineIssueSeconds";
-    if (["faultypiece", "waitingforbundleorsupplies", "qualityissue", "downtime"].includes(normalizedType)) return "otherDowntimeSeconds";
+    if (["faultypiece", "waitingforbundleorsupplies", "nonworkingtime", "qualityissue", "downtime"].includes(normalizedType)) return "otherDowntimeSeconds";
     if (["productive", "work", "operation", "production"].includes(normalizedType)) {
         return "productiveSeconds";
     }
