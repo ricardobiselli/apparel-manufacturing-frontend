@@ -184,6 +184,14 @@ const OperationLog = () => {
           <Button
             variant="secondary"
             size="lg"
+            onClick={() => submitException("OperationDeferred")}
+          >
+            Operation deferred
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="lg"
             onClick={() => submitException("Break")}
           >
             Break
