@@ -4,12 +4,22 @@ import { Button, Form } from "react-bootstrap";
  */// import AuthContext from "../../services/authentication/AuthContext";
 import { AddGarment } from "./endpoints/Endpoints";
 
+const exampleGarment = {
+    garmentName: "Classic T-Shirt (Example)",
+    garmentDescription: "A basic short-sleeve T-shirt with shoulder seams, set-in sleeves, side seams, and finished hems."
+};
+
+const exampleOperations = [
+    { operationName: "Join shoulder seams", operationDescription: "Sew the front and back panels together at both shoulders.", baseTime: 30, unitsPerGarment: 1 },
+    { operationName: "Attach sleeves", operationDescription: "Sew each sleeve into its armhole.", baseTime: 45, unitsPerGarment: 2 },
+    { operationName: "Close side seams", operationDescription: "Sew from each sleeve opening down to the bottom hem.", baseTime: 40, unitsPerGarment: 2 },
+    { operationName: "Hem sleeves", operationDescription: "Fold and stitch the opening of each sleeve.", baseTime: 25, unitsPerGarment: 2 },
+    { operationName: "Hem bottom", operationDescription: "Fold and stitch the bottom edge of the T-shirt.", baseTime: 35, unitsPerGarment: 1 }
+];
+
 const CreateGarment = () => {
     // const{user, role} = useContext(AuthContext);
-    const [garment, setGarment] = useState({
-        garmentName: "",
-        garmentDescription: ""
-    });
+    const [garment, setGarment] = useState({ ...exampleGarment });
 
     const [operation, setOperation] = useState({
         operationName: "",
@@ -18,7 +28,7 @@ const CreateGarment = () => {
         unitsPerGarment: 1
     });
 
-    const [operations, setOperations] = useState([]);
+    const [operations, setOperations] = useState(exampleOperations.map((operation) => ({ ...operation })));
 
     const handleGarmentInputChange = (e) => {
         const { name, value } = e.target;
@@ -50,10 +60,6 @@ const CreateGarment = () => {
         });
     };
 
-    const handleRemoveOperation = (index) => {
-        setOperations(operations.filter((_, i) => i !== index));
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -75,10 +81,7 @@ const CreateGarment = () => {
         try {
             await AddGarment(newGarment);
             alert("Garment successfully added!");
-            setGarment({
-                garmentName: "",
-                garmentDescription: ""
-            });
+            setGarment({ garmentName: "", garmentDescription: "" });
             setOperations([]);
         } catch (error) {
             console.error("Error adding garment:", error);
@@ -182,9 +185,6 @@ const CreateGarment = () => {
                                             <p className="mb-1 text-muted small">{op.operationDescription}</p>
                                             <small>⏱ {op.baseTime}s × {op.unitsPerGarment} units</small>
                                         </div>
-                                        <Button size="sm" variant="outline-danger" onClick={() => handleRemoveOperation(index)}>
-                                            ✕
-                                        </Button>
                                     </li>
                                 ))}
                             </ul>

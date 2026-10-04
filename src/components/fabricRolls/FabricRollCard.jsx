@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { Button, Card } from 'react-bootstrap';
+import { getFabricRollStateLabel } from './FabricRollState';
 
 const FabricRollCard = ({ fabricRoll, onEdit }) => (
     <div className="card-wrapper">
@@ -9,6 +10,8 @@ const FabricRollCard = ({ fabricRoll, onEdit }) => (
             </Card.Header>
             <Card.Body>
                 <p className="mb-2"><strong>ID:</strong> <span style={{ color: 'var(--muted)' }}>{fabricRoll.fabricRollId}</span></p>
+                <p className="mb-2"><strong>Supplier:</strong> <span style={{ color: 'var(--muted)' }}>{fabricRoll.supplier || '-'}</span></p>
+                <p className="mb-2"><strong>State:</strong> <span style={{ color: 'var(--muted)' }}>{getFabricRollStateLabel(fabricRoll.state)}</span></p>
                 <p className="mb-2"><strong>Color:</strong> <span style={{ color: 'var(--muted)' }}>{fabricRoll.color}</span></p>
                 <p className="mb-2"><strong>Weight / Length:</strong> <span style={{ color: 'var(--muted)' }}>{fabricRoll.weightOrLength}</span></p>
                 <p className="mb-2"><strong>Yield:</strong> <span style={{ color: 'var(--muted)' }}>{fabricRoll.yield}</span></p>
@@ -27,6 +30,8 @@ FabricRollCard.propTypes = {
     fabricRoll: PropTypes.shape({
         fabricRollId: PropTypes.number.isRequired,
         fabricRollName: PropTypes.string.isRequired,
+        supplier: PropTypes.string,
+        state: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
         color: PropTypes.string.isRequired,
         fabricRollDescription: PropTypes.string,
         weightOrLength: PropTypes.number.isRequired,

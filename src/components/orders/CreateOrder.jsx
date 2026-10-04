@@ -3,11 +3,15 @@ import useGarments from "../garments/hooks/UseGarments.jsx";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AddOrder } from "./endpoints/Endpoints";
+import useFabricRolls from "../fabricRolls/hooks/UseFabricRolls.jsx";
+import FabricRollPicker from "./FabricRollPicker.jsx";
 
 const CreateOrder = () => {
     const { garments } = useGarments();
+    const { fabricRolls } = useFabricRolls();
     const [selectedGarment, setSelectedGarment] = useState("");
     const [selectedQuantity, setSelectedQuantity] = useState("");
+    const [selectedRollIds, setSelectedRollIds] = useState([]);
     const [description, setDescription] = useState("");
     const navigate = useNavigate();
 
@@ -75,6 +79,15 @@ const CreateOrder = () => {
                             value={selectedQuantity}
                             onChange={(e) => setSelectedQuantity(e.target.value)}
                             required
+                        />
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label className="fw-bold">Fabric Rolls</Form.Label>
+                        <FabricRollPicker
+                            fabricRolls={fabricRolls}
+                            selectedRollIds={selectedRollIds}
+                            onChange={setSelectedRollIds}
                         />
                     </Form.Group>
                     <Form.Group className="mb-4">

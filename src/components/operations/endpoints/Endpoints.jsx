@@ -64,3 +64,13 @@ export const UpdateOperation = async (operationId, updateOperationData) => {
 
     return response.data;
 };
+
+export const AddOperation = async (operationData) => {
+    const response = await api.post('/operation', operationData);
+    return response.data;
+};
+
+export const DeleteOperation = async (operationId) => {
+    const response = await api.delete(`/operation/${operationId}`);
+    return response.data;
+};

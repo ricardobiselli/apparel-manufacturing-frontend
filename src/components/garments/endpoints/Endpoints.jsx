@@ -15,4 +15,15 @@ export const GetGarments = async () => {
     const response = await api.get('/Garment/GetAll/')
     return response.data;
 }
+
+export const UpdateGarment = async (garmentId, garment) => {
+    const response = await api.put(`/Garment/Update/${garmentId}`, garment);
+    return response.data;
+}
+
+//implement soft delete later
+export const DeleteGarment = async (garmentId) => {
+    const response = await api.delete(`/Garment/Delete/${garmentId}`);
+    return response.data;
+}
  
