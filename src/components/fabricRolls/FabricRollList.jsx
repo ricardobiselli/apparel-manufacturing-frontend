@@ -3,6 +3,7 @@ import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import FabricRollCard from './FabricRollCard';
 import useFabricRolls from './hooks/UseFabricRolls.jsx';
 import { UpdateFabricRoll } from './endpoints/Endpoints';
+import { FABRIC_ROLL_STATES, getFabricRollStateValue } from './FabricRollState';
 
 const FabricRollList = () => {
     const { fabricRolls, refreshFabricRolls } = useFabricRolls();
@@ -15,11 +16,12 @@ const FabricRollList = () => {
         setSelectedRoll(fabricRoll);
         setDraft({
             fabricRollName: fabricRoll.fabricRollName,
+            supplier: fabricRoll.supplier || '',
+            state: String(getFabricRollStateValue(fabricRoll.state)),
             color: fabricRoll.color,
             fabricRollDescription: fabricRoll.fabricRollDescription || '',
             weightOrLength: fabricRoll.weightOrLength,
             yield: fabricRoll.yield,
-            date: fabricRoll.date || '',
             barCode: fabricRoll.barCode ?? '',
         });
         setError('');
@@ -43,11 +45,12 @@ const FabricRollList = () => {
         try {
             await UpdateFabricRoll(selectedRoll.fabricRollId, {
                 fabricRollName: draft.fabricRollName.trim(),
+                supplier: draft.supplier.trim(),
+                state: Number(draft.state),
                 color: draft.color.trim(),
                 fabricRollDescription: draft.fabricRollDescription.trim() || null,
                 weightOrLength: Number(draft.weightOrLength),
                 yield: Number(draft.yield),
-                date: draft.date || null,
                 barCode: draft.barCode === '' ? null : Number(draft.barCode),
             });
             await refreshFabricRolls();
@@ -103,6 +106,18 @@ const FabricRollList = () => {
                             <Form.Control name="fabricRollName" value={draft?.fabricRollName || ''} onChange={handleChange} required />
                         </Form.Group>
                         <Form.Group className="mb-3">
+                            <Form.Label>Supplier</Form.Label>
+                            <Form.Control name="supplier" value={draft?.supplier || ''} onChange={handleChange} required />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>State</Form.Label>
+                            <Form.Select name="state" value={draft?.state ?? '0'} onChange={handleChange} required>
+                                {FABRIC_ROLL_STATES.map(({ value, label }) => (
+                                    <option key={value} value={value}>{label}</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+                        <Form.Group className="mb-3">
                             <Form.Label>Color</Form.Label>
                             <Form.Control name="color" value={draft?.color || ''} onChange={handleChange} required />
                         </Form.Group>
@@ -113,10 +128,6 @@ const FabricRollList = () => {
                         <Form.Group className="mb-3">
                             <Form.Label>Yield</Form.Label>
                             <Form.Control type="number" min="0" step="any" name="yield" value={draft?.yield ?? ''} onChange={handleChange} required />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Loaded date</Form.Label>
-                            <Form.Control type="date" name="date" value={draft?.date || ''} onChange={handleChange} required />
                         </Form.Group>
                         <Form.Group className="mb-3">
                             <Form.Label>Barcode (Optional)</Form.Label>

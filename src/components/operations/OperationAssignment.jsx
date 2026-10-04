@@ -3,10 +3,11 @@ import useMachines from '../machines/hooks/UseMachines';
 import useOrders from '../orders/hooks/UseOrders';
 import useMachineSessions from '../machines/hooks/UseMachineSessions';
 import AuthContext from '../../services/authentication/AuthContext';
-import { Form, Button, Table } from 'react-bootstrap';
+import { Alert, Form, Button, Modal, Table } from 'react-bootstrap';
 import {
     AddMachineSession,
-    DeleteMachineSession
+    DeleteMachineSession,
+    UpdateMachineSession
 } from '../machines/endpoints/Endpoints';
 
 const OperationAssignment = () => {
@@ -17,6 +18,11 @@ const OperationAssignment = () => {
 
     const [selectedOrder, setSelectedOrder] = useState('');
     const [machineSelections, setMachineSelections] = useState({});
+    const [updatingMachineKeys, setUpdatingMachineKeys] = useState({});
+    const [editingSession, setEditingSession] = useState(null);
+    const [operationDraft, setOperationDraft] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState('');
 
     const selectedOrderObj = orders?.find(
         (order) => order.orderId === Number(selectedOrder)
@@ -69,11 +75,75 @@ const OperationAssignment = () => {
         setMachineSelections({});
     };
 
-    const handleMachineSelection = (key, machineId) => {
+    const handleMachineSelection = async (key, machineId, assignedSession) => {
         setMachineSelections((prev) => ({
             ...prev,
             [key]: machineId,
         }));
+        if (!assignedSession || !machineId || Number(machineId) === Number(assignedSession.machineId)) return;
+
+        try {
+            setUpdatingMachineKeys((previous) => ({ ...previous, [key]: true }));
+            await UpdateMachineSession(assignedSession.machineSessionId, {
+                machineId: Number(machineId),
+            });
+            setMachineSelections((previous) => {
+                const next = { ...previous };
+                delete next[key];
+                return next;
+            });
+            await fetchSessions();
+        } catch (err) {
+            console.error('Error changing assigned machine:', err);
+            alert('Unable to change the assigned machine. Please try again.');
+            setMachineSelections((previous) => {
+                const next = { ...previous };
+                delete next[key];
+                return next;
+            });
+        } finally {
+            setUpdatingMachineKeys((previous) => ({ ...previous, [key]: false }));
+        }
+    };
+
+    const openEditModal = (session, snapshot) => {
+        setEditingSession(session);
+        setOperationDraft({ ...snapshot });
+        setSaveError('');
+    };
+
+    const closeEditModal = () => {
+        if (isSaving) return;
+        setEditingSession(null);
+        setOperationDraft(null);
+        setSaveError('');
+    };
+
+    const handleOperationDraftChange = (event) => {
+        const { name, value } = event.target;
+        setOperationDraft((previous) => ({ ...previous, [name]: value }));
+    };
+
+    const handleSaveOperation = async (event) => {
+        event.preventDefault();
+        if (!editingSession || !operationDraft) return;
+
+        try {
+            setIsSaving(true);
+            setSaveError('');
+            await UpdateMachineSession(editingSession.machineSessionId, {
+                operationDescription: operationDraft.operationDescription,
+                baseTime: Number(operationDraft.baseTime),
+            });
+            await fetchSessions();
+            setEditingSession(null);
+            setOperationDraft(null);
+        } catch (err) {
+            console.error('Error updating machine session operation:', err);
+            setSaveError('Unable to save operation changes. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleAssign = async (operation) => {
@@ -215,10 +285,16 @@ const OperationAssignment = () => {
                                             <td>
                                                 <Form.Control
                                                     as="select"
-                                                    value={machineSelections[key] || ''}
-                                                    onChange={(e) => handleMachineSelection(key, e.target.value)}
+                                                    value={machineSelections[key] ?? (assignedSession ? String(assignedSession.machineId) : '')}
+                                                    onChange={(e) => handleMachineSelection(key, e.target.value, assignedSession)}
+                                                    disabled={!!updatingMachineKeys[key]}
                                                 >
-                                                    <option value="">-- Select Machine --</option>
+                                                    {!assignedSession && <option value="">-- Select Machine --</option>}
+                                                    {assignedMachine && !operationalMachines.some((machine) => machine.machineId === assignedMachine.machineId) && (
+                                                        <option value={assignedMachine.machineId}>
+                                                            POST {assignedMachine.postNumber} - {assignedMachine.machineModel}
+                                                        </option>
+                                                    )}
                                                     {operationalMachines.map((machine) => (
                                                         <option key={machine.machineId} value={machine.machineId}>
                                                             POST {machine.postNumber} - {machine.machineModel}
@@ -227,18 +303,33 @@ const OperationAssignment = () => {
                                                 </Form.Control>
                                             </td>
                                             <td>
-                                                <Button
-                                                    variant={assignedSession ? 'danger' : 'primary'}
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        assignedSession
-                                                            ? handleDelete(assignedSession.machineSessionId)
-                                                            : handleAssign(operation)
-                                                    }
-                                                    disabled={!assignedSession && !machineSelections[key]}
-                                                >
-                                                    {assignedSession ? 'Delete' : 'Assign'}
-                                                </Button>
+                                                {assignedSession ? (
+                                                    <div className="d-flex gap-2">
+                                                        <Button
+                                                            variant="outline-primary"
+                                                            size="sm"
+                                                            onClick={() => openEditModal(assignedSession, snapshot)}
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                        <Button
+                                                            variant="danger"
+                                                            size="sm"
+                                                            onClick={() => handleDelete(assignedSession.machineSessionId)}
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <Button
+                                                        variant="primary"
+                                                        size="sm"
+                                                        onClick={() => handleAssign(operation)}
+                                                        disabled={!machineSelections[key]}
+                                                    >
+                                                        Assign
+                                                    </Button>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -248,6 +339,47 @@ const OperationAssignment = () => {
                     </Table>
                 </>
             )}
+
+            <Modal show={!!editingSession} onHide={closeEditModal} centered>
+                <Form onSubmit={handleSaveOperation}>
+                    <Modal.Header closeButton={!isSaving}>
+                        <Modal.Title>Edit assigned operation</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        {saveError && <Alert variant="danger">{saveError}</Alert>}
+                        <Form.Group className="mb-3">
+                            <Form.Label>Description</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={2}
+                                name="operationDescription"
+                                value={operationDraft?.operationDescription ?? ''}
+                                onChange={handleOperationDraftChange}
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Base time (seconds)</Form.Label>
+                            <Form.Control
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                name="baseTime"
+                                value={operationDraft?.baseTime ?? ''}
+                                onChange={handleOperationDraftChange}
+                                required
+                            />
+                        </Form.Group>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={closeEditModal} disabled={isSaving}>
+                            Cancel
+                        </Button>
+                        <Button variant="primary" type="submit" disabled={isSaving}>
+                            {isSaving ? 'Saving...' : 'Save changes'}
+                        </Button>
+                    </Modal.Footer>
+                </Form>
+            </Modal>
         </>
     );
 };

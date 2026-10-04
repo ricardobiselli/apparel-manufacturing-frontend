@@ -3,7 +3,7 @@ import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import GarmentCard from './GarmentCard';
 import useGarments from './hooks/UseGarments.jsx';
 import AuthContext from '../../services/authentication/AuthContext';
-import { UpdateOperation } from '../operations/endpoints/Endpoints';
+import { UpdateGarment } from './endpoints/Endpoints';
 
 const GarmentList = () => {
     const { user } = useContext(AuthContext);
@@ -19,9 +19,10 @@ const GarmentList = () => {
 
     const openOperationsModal = (garment) => {
         setSelectedGarment(garment);
-        setOperationDrafts((garment?.operations || []).map((operation) => ({
+        setOperationDrafts((garment?.operations || []).map((operation, index) => ({
             ...operation,
             operationId: operation.operationId ?? operation.id ?? null,
+            draftKey: `existing-${operation.operationId ?? operation.id ?? index}`,
         })));
         setSaveMessage('');
         setSaveError('');
@@ -29,6 +30,7 @@ const GarmentList = () => {
     };
 
     const closeOperationsModal = () => {
+        if (isSaving) return;
         setIsModalOpen(false);
         setSelectedGarment(null);
         setOperationDrafts([]);
@@ -41,11 +43,27 @@ const GarmentList = () => {
             currentIndex === index
                 ? {
                     ...operation,
-                    [field]: field === 'baseTime' ? Number(value) : value,
+                    [field]: ['baseTime', 'unitsPerGarment'].includes(field) && value !== ''
+                        ? Number(value)
+                        : value,
                 }
                 : operation
         ));
     };
+
+    const handleAddOperation = () => {
+        setOperationDrafts((previous) => [...previous, {
+            draftKey: `new-${Date.now()}-${previous.length}`,
+            operationName: '',
+            operationDescription: '',
+            baseTime: '',
+            unitsPerGarment: 1,
+        }]);
+    };
+
+    // const handleRemoveOperation = (index) => {
+    //     setOperationDrafts((previous) => previous.filter((_, currentIndex) => currentIndex !== index));
+    // };
 
     const handleSaveOperations = async () => {
         if (!selectedGarment) return;
@@ -55,27 +73,25 @@ const GarmentList = () => {
             setSaveError('');
             setSaveMessage('');
 
-            for (const operation of operationDrafts) {
-                if (!operation.operationId) {
-                    throw new Error('Missing operation id for one of the selected operations.');
-                }
-
-                const payload = {
+            const payload = {
+                garmentName: selectedGarment.garmentName,
+                garmentDescription: selectedGarment.garmentDescription,
+                operations: operationDrafts.map((operation) => ({
+                    operationId: operation.operationId ?? 0,
                     operationName: operation.operationName || '',
                     operationDescription: operation.operationDescription || '',
                     baseTime: Number(operation.baseTime ?? 0),
                     unitsPerGarment: Number(operation.unitsPerGarment ?? 0),
-                };
+                })),
+            };
 
-                await UpdateOperation(operation.operationId, payload);
-            }
+            await UpdateGarment(selectedGarment.garmentId, payload);
 
             await refreshGarments();
-            setSaveMessage('Operations updated successfully.');
             closeOperationsModal();
         } catch (error) {
-            console.error('Error updating garment operations:', error);
-            setSaveError('Unable to save the changes right now. Please verify the backend endpoint and payload.');
+            console.error('Error saving garment operations:', error);
+            setSaveError('Unable to save operation changes. Please try again.');
         } finally {
             setIsSaving(false);
         }
@@ -116,21 +132,36 @@ const GarmentList = () => {
             </div>
 
             <Modal show={isModalOpen} onHide={closeOperationsModal} size="lg">
-                <Modal.Header closeButton>
-                    <Modal.Title>Edit operations for {selectedGarment?.garmentName || 'garment'}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
+                <Form onSubmit={handleSaveOperations}>
+                    <Modal.Header closeButton={!isSaving}>
+                        <Modal.Title>Manage operations for {selectedGarment?.garmentName || 'garment'}</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
                     {saveError && <Alert variant="danger">{saveError}</Alert>}
                     {saveMessage && <Alert variant="success">{saveMessage}</Alert>}
 
                     {operationDrafts.map((operation, index) => (
-                        <div key={operation.operationId ?? `${selectedGarment?.garmentId}-${index}`} className="border rounded p-3 mb-3">
+                        <div key={operation.draftKey ?? operation.operationId ?? `${selectedGarment?.garmentId}-${index}`} className="border rounded p-3 mb-3">
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <strong>{operation.operationId ? `Operation ${index + 1}` : 'New operation'}</strong>
+                                {/* <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline-danger"
+                                    onClick={() => handleRemoveOperation(index)}
+                                    disabled={isSaving}
+                                >
+                                    Delete
+                                </Button> */}
+                            </div>
                             <Form.Group className="mb-3">
                                 <Form.Label>Operation name</Form.Label>
                                 <Form.Control
                                     type="text"
                                     value={operation.operationName || ''}
                                     onChange={(event) => handleOperationChange(index, 'operationName', event.target.value)}
+                                    required={!operation.operationId}
+                                    disabled={isSaving}
                                 />
                             </Form.Group>
 
@@ -141,6 +172,8 @@ const GarmentList = () => {
                                     rows={2}
                                     value={operation.operationDescription || ''}
                                     onChange={(event) => handleOperationChange(index, 'operationDescription', event.target.value)}
+                                    required={!operation.operationId}
+                                    disabled={isSaving}
                                 />
                             </Form.Group>
 
@@ -148,10 +181,12 @@ const GarmentList = () => {
                                 <Form.Label>Base time (seconds)</Form.Label>
                                 <Form.Control
                                     type="number"
-                                    min="0"
+                                    min={operation.operationId ? '0' : '1'}
                                     step="0.01"
                                     value={operation.baseTime ?? 0}
                                     onChange={(event) => handleOperationChange(index, 'baseTime', event.target.value)}
+                                    required={!operation.operationId}
+                                    disabled={isSaving}
                                 />
                             </Form.Group>
 
@@ -159,22 +194,29 @@ const GarmentList = () => {
                                 <Form.Label>Units per garment</Form.Label>
                                 <Form.Control
                                     type="number"
-                                    min="0"
+                                    min={operation.operationId ? '0' : '1'}
+                                    step="1"
                                     value={operation.unitsPerGarment ?? 0}
                                     onChange={(event) => handleOperationChange(index, 'unitsPerGarment', event.target.value)}
+                                    required={!operation.operationId}
+                                    disabled={isSaving}
                                 />
                             </Form.Group>
                         </div>
                     ))}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={closeOperationsModal} disabled={isSaving}>
-                        Cancel
+                    <Button type="button" variant="outline-primary" onClick={handleAddOperation} disabled={isSaving}>
+                        + Add operation
                     </Button>
-                    <Button variant="primary" onClick={handleSaveOperations} disabled={isSaving}>
-                        {isSaving ? 'Saving...' : 'Save changes'}
-                    </Button>
-                </Modal.Footer>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button type="button" variant="secondary" onClick={closeOperationsModal} disabled={isSaving}>
+                            Cancel
+                        </Button>
+                        <Button variant="primary" type="submit" disabled={isSaving}>
+                            {isSaving ? 'Saving...' : 'Save changes'}
+                        </Button>
+                    </Modal.Footer>
+                </Form>
             </Modal>
         </div>
     );

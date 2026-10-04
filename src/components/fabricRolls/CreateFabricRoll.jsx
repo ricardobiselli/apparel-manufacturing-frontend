@@ -2,14 +2,16 @@ import { useState } from 'react';
 import { Alert, Button, Form } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { AddFabricRoll } from './endpoints/Endpoints';
+import { FABRIC_ROLL_STATES } from './FabricRollState';
 
 const initialFabricRoll = {
     fabricRollName: '',
+    supplier: '',
+    state: '0',
     color: '',
     fabricRollDescription: '',
     weightOrLength: '',
     yield: '',
-    date: new Date().toISOString().slice(0, 10),
     barCode: '',
 };
 
@@ -33,11 +35,12 @@ const CreateFabricRoll = () => {
 
         const payload = {
             fabricRollName: fabricRoll.fabricRollName.trim(),
+            supplier: fabricRoll.supplier.trim(),
+            state: Number(fabricRoll.state),
             color: fabricRoll.color.trim(),
             fabricRollDescription: fabricRoll.fabricRollDescription.trim() || null,
             weightOrLength: Number(fabricRoll.weightOrLength),
             yield: Number(fabricRoll.yield),
-            date: fabricRoll.date,
             barCode: fabricRoll.barCode === '' ? null : Number(fabricRoll.barCode),
         };
 
@@ -60,7 +63,7 @@ const CreateFabricRoll = () => {
                 {error && <Alert variant="danger">{error}</Alert>}
                 <Form onSubmit={handleSubmit}>
                     <Form.Group className="mb-3">
-                        <Form.Label className="fw-bold">Roll name</Form.Label>
+                        <Form.Label className="fw-bold">Fabric specs</Form.Label>
                         <Form.Control
                             type="text"
                             name="fabricRollName"
@@ -69,6 +72,27 @@ const CreateFabricRoll = () => {
                             placeholder="Enter a unique roll name"
                             required
                         />
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label className="fw-bold">Supplier</Form.Label>
+                        <Form.Control
+                            type="text"
+                            name="supplier"
+                            value={fabricRoll.supplier}
+                            onChange={handleChange}
+                            placeholder="Enter the fabric supplier"
+                            required
+                        />
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Label className="fw-bold">State</Form.Label>
+                        <Form.Select name="state" value={fabricRoll.state} onChange={handleChange} required>
+                            {FABRIC_ROLL_STATES.map(({ value, label }) => (
+                                <option key={value} value={value}>{label}</option>
+                            ))}
+                        </Form.Select>
                     </Form.Group>
 
                     <Form.Group className="mb-3">
@@ -107,17 +131,6 @@ const CreateFabricRoll = () => {
                             value={fabricRoll.yield}
                             onChange={handleChange}
                             placeholder="Enter this roll's yield"
-                            required
-                        />
-                    </Form.Group>
-
-                    <Form.Group className="mb-3">
-                        <Form.Label className="fw-bold">Loaded date</Form.Label>
-                        <Form.Control
-                            type="date"
-                            name="date"
-                            value={fabricRoll.date}
-                            onChange={handleChange}
                             required
                         />
                     </Form.Group>
