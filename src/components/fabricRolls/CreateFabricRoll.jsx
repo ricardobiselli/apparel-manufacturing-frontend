@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Alert, Button, Form } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { AddFabricRoll } from './endpoints/Endpoints';
-import { FABRIC_ROLL_STATES } from './FabricRollState';
 
 const initialFabricRoll = {
     fabricRollName: '',
@@ -83,15 +82,6 @@ const CreateFabricRoll = () => {
                             required
                         />
                     </Form.Group>
-
-                    {/* <Form.Group className="mb-3">
-                        <Form.Label className="fw-bold">State</Form.Label>
-                        <Form.Select name="state" value={fabricRoll.state} onChange={handleChange} required>
-                            {FABRIC_ROLL_STATES.map(({ value, label }) => (
-                                <option key={value} value={value}>{label}</option>
-                            ))}
-                        </Form.Select>
-                    </Form.Group> */}
 
                     <Form.Group className="mb-3">
                         <Form.Label className="fw-bold">Color</Form.Label>
