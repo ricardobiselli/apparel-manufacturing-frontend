@@ -1,35 +1,92 @@
 import { Button, Modal } from "react-bootstrap";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { AddOperationLog, AddMachineExceptionLog } from "./endpoints/Endpoints";
 import { UpdateMachineSession } from "../machines/endpoints/Endpoints";
-import { useContext, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import AuthContext from "../../services/authentication/AuthContext";
 
-const LONG_PRESS_DURATION = 1000;
+// Three presses within this gap open exception reporting instead of recording operations.
+const EXCEPTION_TAP_INTERVAL_MS = 500;
+// Gives the operator time to finish the gesture before exception choices appear.
+const EXCEPTION_MODAL_DELAY_MS = 600;
+// These values control the informal recent-pace feedback shown to operators.
+const RECENT_PACE_INTERVAL_COUNT = 5;
+const ON_PACE_EFFICIENCY_THRESHOLD = 80;
+const BEHIND_EFFICIENCY_THRESHOLD = 50;
+const PAUSE_FEEDBACK_EXCEPTION_TYPES = [
+  "Break",
+  "FaultyPiece",
+  "NeedleBreak",
+  "ThreadBreak",
+  "WaitingForBundleOrSupplies",
+];
 
 const clickSound = new Audio("/sounds/click.mp3");
 
 const OperationLog = () => {
   const { machineSessionId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const operationName = location.state?.operationName ?? location.state?.OperationName;
   const { user } = useContext(AuthContext);
   const pressTimer = useRef(null);
+  const exceptionModalTimer = useRef(null);
   const flashTimer = useRef(null);
-  const isLongPress = useRef(false);
   const isSubmitting = useRef(false);
+  const pendingOperationTaps = useRef([]);
+  const tapFlushPromise = useRef(null);
+  // Pace feedback is approximate and frontend-only; tune its window and thresholds here.
+  const baseTimeSeconds = useRef(null);
+  const lastSuccessfulPressAt = useRef(null);
+  const recentIntervalsSeconds = useRef([]);
 
   const [showExceptionModal, setShowExceptionModal] = useState(false);
   const [confirmException, setConfirmException] = useState(null); // 'EndOfDay' or 'EndOfProduction' or null
   const [productionStarted, setProductionStarted] = useState(false);
-  const [flashSuccess, setFlashSuccess] = useState(false);
+  const [flashPace, setFlashPace] = useState(null);
+  const [paceFeedback, setPaceFeedback] = useState(null);
+  const [paceUnavailable, setPaceUnavailable] = useState(false);
+  const [awaitingSuccessfulOperation, setAwaitingSuccessfulOperation] = useState(false);
+
+  // Use the assigned session snapshot passed by MachineSelectScreen; no database request is needed here.
+  useEffect(() => {
+    const baseTime = Number(location.state?.baseTime ?? location.state?.BaseTime);
+    baseTimeSeconds.current = Number.isFinite(baseTime) && baseTime > 0 ? baseTime : null;
+    setPaceUnavailable(baseTimeSeconds.current === null);
+
+    return () => {
+      if (pressTimer.current) clearTimeout(pressTimer.current);
+      if (exceptionModalTimer.current) clearTimeout(exceptionModalTimer.current);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+    };
+  }, [location.state]);
+
+  // Compare the average recent click interval against BaseTime and choose a rough pace cue.
+  const updatePaceFeedback = (intervals) => {
+    const averageInterval = intervals.reduce((total, interval) => total + interval, 0) / intervals.length;
+    const efficiency = (baseTimeSeconds.current / averageInterval) * 100;
+    let feedback;
+
+    if (efficiency >= ON_PACE_EFFICIENCY_THRESHOLD) {
+      feedback = { label: "On pace", efficiency, color: "green" };
+    } else if (efficiency >= BEHIND_EFFICIENCY_THRESHOLD) {
+      feedback = { label: "A bit behind", efficiency, color: "yellow" };
+    } else {
+      feedback = { label: "Well behind", efficiency, color: "orange" };
+    }
+
+    setPaceFeedback(feedback);
+    return feedback;
+  };
 
   // ---------- NORMAL OPERATION ----------
-  const handleNormalOperation = async () => {
+  const handleNormalOperation = async (currentPressAt) => {
     if (isSubmitting.current) return;
     isSubmitting.current = true;
 
     try {
       if (!machineSessionId) return;
+      let flashColor = paceFeedback?.color ?? "green";
 
       clickSound.currentTime = 0;
       clickSound.play();
@@ -47,19 +104,97 @@ const OperationLog = () => {
       }
       await AddOperationLog(Number(machineSessionId));
       setProductionStarted(true);
-      setFlashSuccess(true);
+      setAwaitingSuccessfulOperation(false);
+      if (baseTimeSeconds.current !== null) {
+        if (lastSuccessfulPressAt.current !== null) {
+          const intervalSeconds = (currentPressAt - lastSuccessfulPressAt.current) / 1000;
+          if (intervalSeconds > 0) {
+            recentIntervalsSeconds.current = [
+              ...recentIntervalsSeconds.current,
+              intervalSeconds,
+            ].slice(-RECENT_PACE_INTERVAL_COUNT);
+            flashColor = updatePaceFeedback(recentIntervalsSeconds.current).color;
+          }
+        }
+        lastSuccessfulPressAt.current = currentPressAt;
+      }
+
+      setFlashPace(flashColor);
       if (flashTimer.current) {
         clearTimeout(flashTimer.current);
       }
       flashTimer.current = setTimeout(() => {
-        setFlashSuccess(false);
+        setFlashPace(null);
         flashTimer.current = null;
-      }, 250);
+      }, 400);
     } catch (err) {
       console.error("Error recording operation log:", err);
     } finally {
       isSubmitting.current = false;
     }
+  };
+
+  // Briefly buffer normal taps so a three-tap exception gesture won't create operation logs.
+  const flushPendingOperationTaps = async () => {
+    if (tapFlushPromise.current) {
+      await tapFlushPromise.current;
+      if (pendingOperationTaps.current.length > 0) {
+        await flushPendingOperationTaps();
+      }
+      return;
+    }
+
+    const pressTimes = pendingOperationTaps.current.splice(0);
+    if (pressTimes.length === 0) return;
+
+    tapFlushPromise.current = (async () => {
+      for (const pressTime of pressTimes) {
+        await handleNormalOperation(pressTime);
+      }
+    })();
+
+    try {
+      await tapFlushPromise.current;
+    } finally {
+      tapFlushPromise.current = null;
+    }
+  };
+
+  // Resolve a single/double tap as operation logs, or consume three quick taps as an exception gesture.
+  const handleOperationTap = () => {
+    if (showExceptionModal || exceptionModalTimer.current) return;
+
+    const tapTime = performance.now();
+    const previousTapTime = pendingOperationTaps.current[pendingOperationTaps.current.length - 1];
+
+    if (
+      previousTapTime !== undefined &&
+      tapTime - previousTapTime > EXCEPTION_TAP_INTERVAL_MS
+    ) {
+      if (pressTimer.current) clearTimeout(pressTimer.current);
+      void flushPendingOperationTaps();
+    }
+
+    pendingOperationTaps.current.push(tapTime);
+
+    if (pendingOperationTaps.current.length === 3) {
+      if (pressTimer.current) {
+        clearTimeout(pressTimer.current);
+        pressTimer.current = null;
+      }
+      pendingOperationTaps.current = [];
+      exceptionModalTimer.current = setTimeout(() => {
+        exceptionModalTimer.current = null;
+        setShowExceptionModal(true);
+      }, EXCEPTION_MODAL_DELAY_MS);
+      return;
+    }
+
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = setTimeout(() => {
+      pressTimer.current = null;
+      void flushPendingOperationTaps();
+    }, EXCEPTION_TAP_INTERVAL_MS);
   };
 
   // ---------- EXCEPTION ----------
@@ -70,6 +205,18 @@ const OperationLog = () => {
         Number(machineSessionId),
         exceptionType
       );
+      // Do not count time spent handling an exception as time spent performing an operation.
+      lastSuccessfulPressAt.current = null;
+      recentIntervalsSeconds.current = [];
+      setPaceFeedback(null);
+      if (PAUSE_FEEDBACK_EXCEPTION_TYPES.includes(exceptionType)) {
+        setAwaitingSuccessfulOperation(true);
+        setFlashPace(null);
+        if (flashTimer.current) {
+          clearTimeout(flashTimer.current);
+          flashTimer.current = null;
+        }
+      }
       setShowExceptionModal(false);
       setConfirmException(null);
 
@@ -81,63 +228,84 @@ const OperationLog = () => {
     }
   };
 
-  // ---------- PRESS LOGIC ----------
-  const startPress = () => {
-    isLongPress.current = false;
-
-    pressTimer.current = setTimeout(() => {
-      isLongPress.current = true;
-      setShowExceptionModal(true);
-    }, LONG_PRESS_DURATION);
-  };
-
+  // ---------- TAP GESTURE ----------
   const endPress = () => {
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
-
-    if (!isLongPress.current) {
-      if (!isSubmitting.current) {
-        handleNormalOperation();
-      }
-    }
-  };
-
-  const cancelPress = () => {
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
-    isLongPress.current = false;
+    handleOperationTap();
   };
 
   return (
     <div
-      className="d-flex align-items-center justify-content-center"
+      className="d-flex flex-column align-items-center justify-content-center"
       style={{ minHeight: '100vh', padding: '1rem' }}
     >
       <Button
-        onPointerDown={startPress}
         onPointerUp={endPress}
-        onPointerLeave={cancelPress}
-        onPointerCancel={cancelPress}
-        variant={flashSuccess ? "success" : "primary"}
+        variant={awaitingSuccessfulOperation ? "secondary" : flashPace ? "success" : "primary"}
         size="lg"
         style={{
           borderRadius: 0,
           width: '100%',
           maxWidth: 680,
-          height: 'calc(100vh - 2rem)',
+          height: 'calc(100vh - 5rem)',
           minHeight: 240,
           padding: '1rem',
-          fontSize: '1.5rem',
-          textTransform: 'uppercase',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1.25rem',
           transition: 'background-color 120ms ease, color 120ms ease',
+          ...(awaitingSuccessfulOperation && {
+            backgroundColor: "#6c757d",
+            borderColor: "#6c757d",
+            color: "#fff",
+          }),
+          ...(flashPace && {
+            backgroundColor: {
+              green: "#198754",
+              yellow: "#ffc107",
+              orange: "#fd7e14",
+            }[flashPace],
+            borderColor: {
+              green: "#198754",
+              yellow: "#ffc107",
+              orange: "#fd7e14",
+            }[flashPace],
+            color: flashPace === "yellow" ? "#212529" : "#fff",
+          }),
         }}
         className="w-100"
       >
-        {productionStarted ? "Log operation" : "tap to start!"}
+        <span style={{ fontSize: '1.5rem', textTransform: 'uppercase' }}>
+          {productionStarted ? "Log operation" : "tap to start!"}
+        </span>
+        <span style={{ fontSize: '1.25rem', textTransform: 'none' }}>
+          {operationName || "Operation"}
+        </span>
+        <span
+          className="text-center"
+          aria-live="polite"
+          style={{ fontSize: '1.25rem', textTransform: 'none' }}
+        >
+          {awaitingSuccessfulOperation ? (
+            <span style={{ color: '#f20000' }}>
+      Tap after completing your next successful operation
+    </span>
+          ) : paceFeedback ? (
+            <>
+              Recent pace: <strong>{paceFeedback.label}</strong>
+              <br />
+              {Math.round(paceFeedback.efficiency)}% of target
+            </>
+          ) : paceUnavailable ? (
+            "Pace feedback unavailable"
+          ) : (
+            "Pace feedback starts after a few operations"
+          )}
+        </span>
+        <span style={{ fontSize: '0.9rem', textTransform: 'none' }}>
+          Tap 3 times quickly to report an exception
+        </span>
       </Button>
 
       {/* ---------- EXCEPTION MODAL ---------- */}

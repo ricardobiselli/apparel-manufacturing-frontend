@@ -73,7 +73,13 @@ const MachineSelectScreen = () => {
     const handleConfirm = () => {
         if (!activeSession) return;
 
-        navigate(`/operationLog/${activeSession.machineSessionId}`);
+        // Pass the session's BaseTime to the log screen so pace feedback needs no per-click API calls.
+        navigate(`/operationLog/${activeSession.machineSessionId}`, {
+            state: {
+                baseTime: activeSession.baseTime,
+                operationName: activeSession.operationName,
+            },
+        });
     };
 
     return (
