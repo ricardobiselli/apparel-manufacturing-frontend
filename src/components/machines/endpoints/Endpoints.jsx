@@ -55,6 +55,6 @@ export const GetMachineSessions = async () => {
 }
 
 export const DeleteMachineSession = async (id) => {
-    const response = await api.delete(`/MachineSession/${id}`)
+    const response = await api.delete(`/MachineSession/${id}`);
     return response.data;
 }
