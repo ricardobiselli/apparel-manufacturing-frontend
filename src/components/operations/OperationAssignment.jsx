@@ -24,7 +24,11 @@ const OperationAssignment = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState('');
 
-    const selectedOrderObj = orders?.find(
+    const assignableOrders = (orders ?? []).filter((order) =>
+        ['pending', 'active'].includes(order.status?.trim().toLowerCase())
+    );
+
+    const selectedOrderObj = assignableOrders.find(
         (order) => order.orderId === Number(selectedOrder)
     );
 
@@ -45,7 +49,9 @@ const OperationAssignment = () => {
 
     const currentAssignments = selectedOrder
         ? machineSessions.filter(
-            (session) => session.orderId === Number(selectedOrder)
+            (session) =>
+                session.orderId === Number(selectedOrder) &&
+                ['Pending', 'InProgress'].includes(session.status)
         )
         : [];
 
@@ -218,9 +224,9 @@ const OperationAssignment = () => {
                         onChange={handleOrderChange}
                     >
                         <option value="">-- Select Order --</option>
-                        {orders?.map((order) => (
+                        {assignableOrders.map((order) => (
                             <option key={order.orderId} value={order.orderId}>
-                                Order #{order.orderId} - {order.description}
+                                Order # {order.orderId} - {order.description} - {new Date(order.dateOfCreation).toLocaleDateString()} - {order.status}
                             </option>
                         ))}
                     </Form.Control>

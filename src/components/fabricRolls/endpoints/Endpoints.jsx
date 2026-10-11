@@ -14,3 +14,8 @@ export const UpdateFabricRoll = async (fabricRollId, fabricRoll) => {
     const response = await api.put(`/FabricRoll/Update/${fabricRollId}`, fabricRoll);
     return response.data;
 };
+
+export const CommitFabricRoll = async (fabricRollId, fabricRoll) => {
+    const response = await api.put(`/FabricRoll/Commit/${fabricRollId}`, fabricRoll);
+    return response.data;
+};
