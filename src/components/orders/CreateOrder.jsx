@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { AddOrder } from "./endpoints/Endpoints";
 import useFabricRolls from "../fabricRolls/hooks/UseFabricRolls.jsx";
 import FabricRollPicker from "./FabricRollPicker.jsx";
+import {CommitFabricRoll} from "../fabricRolls/endpoints/Endpoints.jsx";
 
 const CreateOrder = () => {
     const { garments } = useGarments();
@@ -24,14 +25,24 @@ const CreateOrder = () => {
                 {
                     garmentId: selectedGarment,
                     quantity: selectedQuantity
-                }
-            ]
+                },
+
+            ],
+            fabricRolls: selectedRollIds.map((rollId) => ({ fabricRollId: rollId }))
         };
 
+        //checkpoint to see if the order object is being created correctly
+        
         try {
+            console.log('checkpoint order object before submitting:', order);
             await AddOrder(order);
+            await Promise.all(
+                selectedRollIds.map((rollId) =>
+                    CommitFabricRoll(rollId, { state: "Committed" })
+                )
+            );
             alert('Order submitted successfully')
-            ;
+                ;
             setSelectedGarment("");
             setSelectedQuantity("");
             setDescription("");
@@ -105,7 +116,7 @@ const CreateOrder = () => {
                         variant="primary"
                         type="submit"
                         className="w-100 py-2 fw-bold"
-                        disabled={!selectedGarment || !selectedQuantity }
+                        disabled={!selectedGarment || !selectedQuantity}
                     >
                         Create Order
                     </Button>
