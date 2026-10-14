@@ -64,9 +64,6 @@ const buildDailyProduction = (sessionRows) => {
 
     sessionRows.forEach(({ metric }) => {
         metric?.segments?.forEach((segment) => {
-            const normalizedType = String(segment.type ?? "").replace(/[^a-z]/gi, "").toLowerCase();
-            if (normalizedType === "operationdeferred") return;
-
             const category = getSegmentCategory(segment.type);
             const start = segment.start ? new Date(segment.start) : null;
             const duration = durationToSeconds(segment.duration);
