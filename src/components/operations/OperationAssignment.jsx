@@ -49,9 +49,11 @@ const OperationAssignment = () => {
 
     const currentAssignments = selectedOrder
         ? machineSessions.filter(
-            (session) =>
-                session.orderId === Number(selectedOrder) &&
-                ['Pending', 'InProgress'].includes(session.status)
+            (session) => {
+                const status = String(session.status ?? session.Status ?? '').toLowerCase();
+                return session.orderId === Number(selectedOrder) &&
+                    ['pending', 'inprogress', 'completed'].includes(status);
+            }
         )
         : [];
 
@@ -87,6 +89,8 @@ const OperationAssignment = () => {
             [key]: machineId,
         }));
         if (!assignedSession || !machineId || Number(machineId) === Number(assignedSession.machineId)) return;
+        const status = String(assignedSession.status ?? assignedSession.Status ?? '').toLowerCase();
+        if (status === 'completed') return;
 
         try {
             setUpdatingMachineKeys((previous) => ({ ...previous, [key]: true }));
@@ -200,6 +204,29 @@ const OperationAssignment = () => {
         }
     };
 
+    const handleReassign = async (session, key) => {
+        const machineId = machineSelections[key] || String(session.machineId);
+
+        try {
+            setUpdatingMachineKeys((previous) => ({ ...previous, [key]: true }));
+            await UpdateMachineSession(session.machineSessionId, {
+                machineId: Number(machineId),
+                status: 'Pending',
+            });
+            setMachineSelections((previous) => {
+                const next = { ...previous };
+                delete next[key];
+                return next;
+            });
+            await fetchSessions();
+        } catch (err) {
+            console.error('Error reassigning completed machine session:', err);
+            alert('Unable to re-assign the completed operation. Please try again.');
+        } finally {
+            setUpdatingMachineKeys((previous) => ({ ...previous, [key]: false }));
+        }
+    };
+
     const handleDelete = async (id) => {
         // const confirmDelete = window.confirm('Are you sure you want to delete this assignment?');
         // if (!confirmDelete) return;
@@ -269,6 +296,9 @@ const OperationAssignment = () => {
                                         (machine) => (machine?.Status ?? machine?.status ?? '').toString().toLowerCase() === 'operational'
                                     );
                                     const snapshot = getOperationSnapshot(operation, assignedSession);
+                                    const isCompleted = String(
+                                        assignedSession?.status ?? assignedSession?.Status ?? ''
+                                    ).toLowerCase() === 'completed';
 
                                     return (
                                         <tr key={key}>
@@ -309,7 +339,16 @@ const OperationAssignment = () => {
                                                 </Form.Control>
                                             </td>
                                             <td>
-                                                {assignedSession ? (
+                                                {isCompleted ? (
+                                                    <Button
+                                                        variant="primary"
+                                                        size="sm"
+                                                        onClick={() => handleReassign(assignedSession, key)}
+                                                        disabled={!!updatingMachineKeys[key]}
+                                                    >
+                                                        Re-assign
+                                                    </Button>
+                                                ) : assignedSession ? (
                                                     <div className="d-flex gap-2">
                                                         <Button
                                                             variant="outline-primary"
